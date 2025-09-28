@@ -184,10 +184,10 @@ const forgetPassword = async (userEmail: string) => {
     role: user.role
   }
 
-  const resetToken = createToken(jwtPayload, config.jwt_access_secret as string, config.reset_password_time as string)
+  const resetToken = createToken(jwtPayload, config.jwt_reset_password_secret as string, config.reset_password_time as string)
 
   const resetUILink = `${config.reset_pass_ui_link}?token=${resetToken} `
-  
+
   await sendEmail(
     user.email,
     `Hi ${user.name}, <br/><br/>
@@ -215,9 +215,11 @@ The Bangla Versity Team`
   return null
 }
 
-const resetPassword = async (payload: { id: string; newPassword: string }, token: string) => {
+const resetPassword = async (payload: { newPassword: string }, token: string) => {
   // checking if the user is exist
-  const user = await User.findById(payload.id)
+
+  const decoded = jwt.verify(token, config.jwt_reset_password_secret as string) as JwtPayload
+  const user = await User.findById(decoded.userId)
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, 'This user is not found !')
   }
@@ -235,13 +237,6 @@ const resetPassword = async (payload: { id: string; newPassword: string }, token
     throw new AppError(httpStatus.FORBIDDEN, 'This user is blocked ! !')
   }
 
-  const decoded = jwt.verify(token, config.jwt_access_secret as string) as JwtPayload
-
-  //localhost:3000?id=A-0001&token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJBLTAwMDEiLCJyb2xlIjoiYWRtaW4iLCJpYXQiOjE3MDI4NTA2MTcsImV4cCI6MTcwMjg1MTIxN30.-T90nRaz8-KouKki1DkCSMAbsHyb9yDi0djZU3D6QO4
-
-  if (payload.id !== decoded.userId) {
-    throw new AppError(httpStatus.FORBIDDEN, 'You are forbidden!')
-  }
 
   //hash new password
   const newHashedPassword = await bcrypt.hash(payload.newPassword, Number(config.bcrypt_salt_rounds))
