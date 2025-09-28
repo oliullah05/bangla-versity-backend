@@ -186,7 +186,8 @@ const forgetPassword = async (userEmail: string) => {
 
   const resetToken = createToken(jwtPayload, config.jwt_access_secret as string, config.reset_password_time as string)
 
-  const resetUILink = `${config.reset_pass_ui_link}?id=${user._id}&token=${resetToken} `
+  const resetUILink = `${config.reset_pass_ui_link}?token=${resetToken} `
+  
   await sendEmail(
     user.email,
     `Hi ${user.name}, <br/><br/>
